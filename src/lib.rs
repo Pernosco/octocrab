@@ -532,7 +532,14 @@ impl OctocrabBuilder<NoSvc, DefaultOctocrabBuilderConfig, NoAuth, NotLayerReady>
             #[cfg(all(not(feature = "opentls"), not(feature = "rustls")))]
             let mut connector = HttpConnector::new();
 
-            #[cfg(all(feature = "rustls", not(feature = "opentls")))]
+            #[cfg(all(feature = "rustls", feature = "rustls-webpki-tokio"))]
+            let connector = HttpsConnectorBuilder::new()
+                .with_webpki_roots() // enabled the `webpki-roots` feature in hyper-rustls
+                .https_or_http() //  Disable .https_only() during tests until: https://github.com/LukeMathWalker/wiremock-rs/issues/58 is resolved. Alternatively we can use conditional compilation to only enable this feature in tests, but it becomes rather ugly with integration tests.
+                .enable_http1()
+                .build();
+
+            #[cfg(all(feature = "rustls", not(any(feature = "opentls", feature = "rustls-webpki-tokio"))))]
             let connector = HttpsConnectorBuilder::new()
                 .with_native_roots() // enabled the `rustls-native-certs` feature in hyper-rustls
                 .https_or_http() //  Disable .https_only() during tests until: https://github.com/LukeMathWalker/wiremock-rs/issues/58 is resolved. Alternatively we can use conditional compilation to only enable this feature in tests, but it becomes rather ugly with integration tests.
